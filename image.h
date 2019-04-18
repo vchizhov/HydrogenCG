@@ -11,6 +11,7 @@ namespace HydrogenCG
 	class Image
 	{
 	private:
+		// Please use std::vector to get rid of the manual memory management.
 		vec3* e;
 		uint32_t width, height;
 	public:

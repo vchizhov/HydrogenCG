@@ -24,14 +24,17 @@ namespace HydrogenCG
 
 	struct Scene
 	{
+		// Extension of my comment in main.cpp, this should be using modern C++
+		// std::vector<std::unique_ptr<Surface>> is the better solution.
 		std::vector<Surface*> surfaces;
 		std::vector<LightPoint> lights;
 
-		~Scene() 
+		~Scene()
 		{
-			for (int i = 0; i < surfaces.size(); ++i) delete surfaces[i]; 
+			for (int i = 0; i < surfaces.size(); ++i) delete surfaces[i];
 		}
 
+		// Missing asserts and should return a reference.
 		Surface* operator()(uint32_t i) { return surfaces[i]; }
 		const Surface* operator()(uint32_t i) const { return surfaces[i]; }
 
@@ -43,6 +46,8 @@ namespace HydrogenCG
 			// iterate over all objects
 			for (int i = 0; i < surfaces.size(); ++i)
 			{
+				// [Personal preference] I don't think the intersect functions should do the distance checks.
+				// I would the distance checking here. I think that's better in terms of separation of concern.
 				float t = surfaces[i]->intersect(ray, minT, info.t);
 				if (t > minT)
 				{

@@ -40,7 +40,7 @@ namespace HydrogenCG
 	public:
 		virtual vec3 li(const Ray& ray, const Scene& scene) const override
 		{
-			float farPlane = 0.0f;
+			float farPlane = 0.0f; // Unused?
 			IntersectInfo intersect = scene.intersect(ray);
 			return vec3(1 / intersect.t);
 		}
@@ -51,7 +51,7 @@ namespace HydrogenCG
 	public:
 		virtual vec3 li(const Ray& ray, const Scene& scene) const override
 		{
-			float farPlane = 0.0f;
+			float farPlane = 0.0f; // Unused?
 			IntersectInfo intersect = scene.intersect(ray);
 			vec3 col = vec3(0);
 			if (intersect)
@@ -70,7 +70,7 @@ namespace HydrogenCG
 	public:
 		virtual vec3 li(const Ray& ray, const Scene& scene) const override
 		{
-			float farPlane = 0.0f;
+			float farPlane = 0.0f; // Unused?
 			IntersectInfo intersect = scene.intersect(ray);
 			vec3 col = vec3(0);
 			if (intersect)
@@ -87,7 +87,6 @@ namespace HydrogenCG
 	public:
 		virtual vec3 li(const Ray& ray, const Scene& scene) const override
 		{
-			
 			Ray r = ray;
 			vec3 col = vec3(1.0f);
 			for (int i = 0; i < 10; ++i)
@@ -107,7 +106,6 @@ namespace HydrogenCG
 	public:
 		virtual vec3 li(const Ray& ray, const Scene& scene) const override
 		{
-
 			vec3 col = vec3(0.0f);
 			IntersectInfo intersect = scene.intersect(ray);
 			if (intersect)
