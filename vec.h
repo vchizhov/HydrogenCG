@@ -1,5 +1,9 @@
 #pragma once
-#pragma once
+/*
+	@author: Vassillen Chizhov, 2019
+	Raycaster, part 0: Ray tracing a sphere
+*/
+
 #include <assert.h>
 #include <math.h>
 #include "math.h"

@@ -1,6 +1,6 @@
 /*
 	@author: Vassillen Chizhov, 2019
-	Raycaster, part 0: Rendering a sphere
+	Raycaster, part 0: Ray tracing a sphere
 */
 
 #include <limits>
