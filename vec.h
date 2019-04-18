@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 #include <assert.h>
 #include <math.h>
 #include "math.h"
@@ -45,7 +46,7 @@ namespace HydrogenCG
 		const float& operator()(int i) const { assert(i >= 0 && i < 3 && "HydrogenCG::vec3::operator():: Array index out of bounds"); return at(i); }
 		float& operator[](int i) { assert(i >= 0 && i < 3 && "HydrogenCG::vec3::operator():: Array index out of bounds"); return at(i); }
 		const float& operator[](int i) const { assert(i >= 0 && i < 3 && "HydrogenCG::vec3::operator():: Array index out of bounds"); return at(i); }
-		
+
 
 		// Componentwise / Hadamard operations
 
@@ -160,14 +161,9 @@ namespace HydrogenCG
 		return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 	}
 
-	inline float lengthSquared(const vec3& arg)
-	{
-		return dot(arg, arg);
-	}
-
 	inline float length(const vec3& arg)
 	{
-		return sqrtf(lengthSquared(arg));
+		return sqrtf(dot(arg, arg));
 	}
 
 	inline vec3 normalize(const vec3& arg)

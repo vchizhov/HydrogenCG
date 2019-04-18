@@ -1,8 +1,12 @@
 #pragma once
-#include "vec.h"
-#include "math.h"
+
+
 #include <cstdint>
 #include <fstream>
+
+#include "vec.h"
+#include "math.h"
+#include "typedef.h"
 
 
 namespace HydrogenCG
@@ -12,12 +16,12 @@ namespace HydrogenCG
 	{
 	private:
 		vec3* e;
-		uint32_t width, height;
+		u32 width, height;
 	public:
 		Image() : e(nullptr), width(0), height(0) {}
 		~Image() { free(); }
 
-		void init(uint32_t w, uint32_t h)
+		void init(u32 w, u32 h)
 		{
 			free();
 			e = new vec3[w*h];
@@ -32,20 +36,20 @@ namespace HydrogenCG
 			height = 0;
 		}
 
-		uint32_t w() const { return width; }
-		uint32_t h() const { return height; }
+		u32 w() const { return width; }
+		u32 h() const { return height; }
 		const vec3* data() const { return e; }
 
-		vec3& at(uint32_t idx) { return e[idx]; }
-		const vec3& at(uint32_t idx) const { return e[idx]; }
+		vec3& at(u32 idx) { return e[idx]; }
+		const vec3& at(u32 idx) const { return e[idx]; }
 
-		vec3& operator()(uint32_t idx) { assert(idx < width*height && "Array index out of bounds"); return at(idx); }
-		const vec3& operator()(uint32_t idx) const { assert(idx < width*height && "Array index out of bounds"); return at(idx); }
+		vec3& operator()(u32 idx) { assert(idx < width*height"Array index out of bounds"); return at(idx); }
+		const vec3& operator()(u32 idx) const { assert(idx < width*height"Array index out of bounds"); return at(idx); }
 
-		vec3& at(uint32_t x, uint32_t y) { return e[x + width * y]; }
-		const vec3& at(uint32_t x, uint32_t y) const { return e[x + width * y]; }
-		vec3& operator()(uint32_t x, uint32_t y) { assert(x < width && y < height && "Array index out of bounds");  return at(x,y); }
-		const vec3& operator()(uint32_t x, uint32_t y) const { assert(x < width && y < height && "Array index out of bounds");  return at(x,y); }
+		vec3& at(u32 x, u32 y) { return e[x + width * y]; }
+		const vec3& at(u32 x, u32 y) const { return e[x + width * y]; }
+		vec3& operator()(u32 x, u32 y) { assert(x < width && y < height && "Array index out of bounds");  return at(x, y); }
+		const vec3& operator()(u32 x, u32 y) const { assert(x < width && y < height && "Array index out of bounds");  return at(x, y); }
 
 		// http://netpbm.sourceforge.net/doc/ppm.html
 		bool savePPM(const char* filename)
@@ -62,15 +66,15 @@ namespace HydrogenCG
 			file << "255\n"; // the maximum color value, can be at most 2^16-1 = 65535
 
 			// Iterate over all rows
-			for (uint32_t y = 0; y < h(); ++y)
+			for (u32 y = 0; y < h(); ++y)
 			{
 				// Save each row
-				for (uint32_t x = 0; x < w(); ++x)
+				for (u32 x = 0; x < w(); ++x)
 				{
 					vec3 col = clamp(at(x, y) * 256.0, 0.0, 255.0); // map from [0,1] to [0,255] and clamp
-					uint32_t r = (uint32_t)col.r;
-					uint32_t g = (uint32_t)col.g;
-					uint32_t b = (uint32_t)col.b;
+					u32 r = (u32)col.r;
+					u32 g = (u32)col.g;
+					u32 b = (u32)col.b;
 					file << r << "\t" << g << "\t" << b << "\t\t";
 				}
 				file << "\t";
