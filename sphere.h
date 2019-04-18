@@ -26,6 +26,8 @@ namespace HydrogenCG
 		// otherwise returns the distance from the ray origin to the closest intersection
 		float intersect(const Ray& ray, float minT = 0.0f, float maxT = std::numeric_limits<float>::max()) const final
 		{
+			// I'm not sure how to read the notation used here, namely line 3 and such. Is this explained in the PDF?
+			// Otherwise please explain your notation.
 			/*
 				|ray(t) - pos| == r <->
 				|ray(t) - pos|^2 == r^2 <->
@@ -54,6 +56,7 @@ namespace HydrogenCG
 			vec3 oPos = pos - ray.o;
 			float b = dot(ray.d, oPos);
 			float c = dot(oPos, oPos) - radius*radius;
+			// Imo you should write this out as float discriminant = ...
 			float d = b * b - c;
 
 			// If the discriminant is 0 or negative -> no (actual) intersection
@@ -72,6 +75,7 @@ namespace HydrogenCG
 		}
 
 		// Returns the normal for any point on the sphere, and scaled normals for points not on the sphere
+		// Does this mean this is a unit vector when it's a point on the sphere? Please document clearly.
 		vec3 normal(const vec3& pointInSpace) const final
 		{
 			return (pointInSpace - pos) / radius;

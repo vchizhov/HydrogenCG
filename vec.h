@@ -7,7 +7,7 @@ namespace HydrogenCG
 {
 	struct vec3
 	{
-		// this union is not standard conformant, but supported by major compilers
+		// this union is not standard conformant, but supported by all major compilers
 		// allows to use aliases for the variables
 		union
 		{
@@ -26,6 +26,11 @@ namespace HydrogenCG
 			float e[3];
 		};
 
+		// Imo we should not have default constructors that do nothing.
+		// 0 initialization should be the default, and we can use tags to
+		// create constructors that leave data uninitialized.
+		// This helps people from all skill levels to prevent bugs from
+		// happening caused by uninitialized data.
 		vec3() {}
 		explicit vec3(float scalar) : x(scalar), y(scalar), z(scalar) {}
 		vec3(float x, float y, float z) : x(x), y(y), z(z) {}
@@ -45,7 +50,7 @@ namespace HydrogenCG
 		const float& operator()(int i) const { assert(i >= 0 && i < 3 && "HydrogenCG::vec3::operator():: Array index out of bounds"); return at(i); }
 		float& operator[](int i) { assert(i >= 0 && i < 3 && "HydrogenCG::vec3::operator():: Array index out of bounds"); return at(i); }
 		const float& operator[](int i) const { assert(i >= 0 && i < 3 && "HydrogenCG::vec3::operator():: Array index out of bounds"); return at(i); }
-		
+
 
 		// Componentwise / Hadamard operations
 
