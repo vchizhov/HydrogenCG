@@ -1,7 +1,4 @@
 # Introduction
-
-$$x+y$$
-
 This tutorial is meant to walk the reader iteratively through
 programming a basic ray caster, ray marcher, ray tracer, and path tracer
 at a beginner level. The emphasis will be on simplicity, clarity, and
