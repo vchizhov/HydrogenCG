@@ -1,28 +1,51 @@
 #pragma once
 #include "vec.h"
 #include "math.h"
+#include "typedef.h"
 #include <cstdint>
 #include <fstream>
 
 
 namespace HydrogenCG
 {
-	// row-major image - see definition of at()
+	/*!
+		\brief		A class to represent a 3-component float valued image.
+
+		Provides a method to save to PPM.
+		We use row-major order for the array, so accessing elements 
+		should be done along the x coordinate first preferably.
+	*/
 	class Image
 	{
 	private:
-		vec3* e;
-		uint32_t width, height;
+		vec3* e;		//!< The position of the the aperture of the camera
+		u32 width;		//!< Number of columns
+		u32 height;		//!< Number of rows
+
 	public:
 		Image() : e(nullptr), width(0), height(0) {}
+		Image(u32 w, u32 h) { init(w, h); }
+		Image(const Image& arg) { init(arg.w(), arg.h()); copy(arg); };
 		~Image() { free(); }
 
-		void init(uint32_t w, uint32_t h)
+		Image& operator=(const Image& arg)
+		{
+			copy(arg);
+			return *this;
+		}
+
+		void init(u32 w, u32 h)
 		{
 			free();
 			e = new vec3[w*h];
 			width = w;
 			height = h;
+		}
+
+		void copy(const Image& arg)
+		{
+			assert(w() == arg.w() && h() == arg.h() && "Image::copy():: Image dimensions do not match.");
+			memcpy(e, arg.data(), arg.size() * sizeof(vec3));
 		}
 
 		void free()
@@ -32,23 +55,63 @@ namespace HydrogenCG
 			height = 0;
 		}
 
-		uint32_t w() const { return width; }
-		uint32_t h() const { return height; }
+		inline u32 w() const { return width; }
+		inline u32 h() const { return height; }
+		inline u32 size() const { return w() * h(); }
 		const vec3* data() const { return e; }
+		const float* dataPlain() const { return reinterpret_cast<float*>(e); }
 
-		vec3& at(uint32_t idx) { return e[idx]; }
-		const vec3& at(uint32_t idx) const { return e[idx]; }
+		/*!
+			Given the x (column) and y (row) index in the 2D array, returns the corresponding index
+			in the 1D array, note that this defines the ordering of the array, in this case row-major
+		*/
+		inline u32 idx(u32 x, u32 y) const { return x + y * w(); }
 
-		vec3& operator()(uint32_t idx) { assert(idx < width*height && "Array index out of bounds"); return at(idx); }
-		const vec3& operator()(uint32_t idx) const { assert(idx < width*height && "Array index out of bounds"); return at(idx); }
+		/*! 
+			Given an index into the 1D array, returns the corresponding x index (column) in the 2D array,
+			should be consistent with idx()
+		*/
+		inline u32 xIdx(u32 idx) const { return idx % w(); }
 
-		vec3& at(uint32_t x, uint32_t y) { return e[x + width * y]; }
-		const vec3& at(uint32_t x, uint32_t y) const { return e[x + width * y]; }
-		vec3& operator()(uint32_t x, uint32_t y) { assert(x < width && y < height && "Array index out of bounds");  return at(x,y); }
-		const vec3& operator()(uint32_t x, uint32_t y) const { assert(x < width && y < height && "Array index out of bounds");  return at(x,y); }
+		/*! 
+			Given an index into the 1D array, returns the corresponding y index (row) in the 2D array,
+			should be consistent with idx()
+		*/
+		inline u32 yIdx(u32 idx) const { return idx / w(); }
 
-		// http://netpbm.sourceforge.net/doc/ppm.html
-		bool savePPM(const char* filename)
+		// accessors:
+
+		// Convenience (rather than calling (*this)(idx) when defining other class methods)
+		inline vec3& get(u32 idx) { return e[idx]; }
+		inline const vec3& get(u32 idx) const { return e[idx]; }
+		inline vec3& get(u32 x, u32 y) { return e[idx(x, y)]; }
+		inline const vec3& get(u32 x, u32 y) const { return e[idx(x, y)]; }
+
+		// accessors with bounds checks
+		inline vec3& at(u32 idx) { assert(idx < size() && "Array index out of bounds."); return get(idx); }
+		inline const vec3& at(u32 idx) const { assert(idx < size() && "Array index out of bounds."); return get(idx); }
+		inline vec3& at(u32 x, u32 y) { assert(x < w() && y < h() && "Array index out of bounds."); return get(x,y); }
+		inline const vec3& at(u32 x, u32 y) const { assert(x < w() && y < h() && "Array index out of bounds."); return get(x, y); }
+
+		// accessors without bound checks
+		inline vec3& operator()(u32 idx) { return get(idx); }
+		inline const vec3& operator()(u32 idx) const { return get(idx); }
+		inline vec3& operator()(u32 x, u32 y) { return get(x, y); }
+		inline const vec3& operator()(u32 x, u32 y) const { return get(x, y); }
+
+		inline vec3& operator[](u32 idx) { return get(idx); }
+		inline const vec3& operator[](u32 idx) const { return get(idx); }
+		
+		
+		/*!
+			\brief		Saves the current image to a plain PPM file with [0,maxVal] range
+
+			The default max value is set to 255, higher values may be used for higher 
+			precision and less banding due to inadequate quantization
+
+			see reference: http://netpbm.sourceforge.net/doc/ppm.html
+		*/
+		bool savePPM(const char* filename, float gamma = 1/2.2f, u16 maxVal = 255)
 		{
 			std::ofstream file;
 			file.open(filename);
@@ -59,18 +122,28 @@ namespace HydrogenCG
 			// header of a plain PPM file
 			file << "P3\n";	// magic number identifying the file type
 			file << w() << "\t" << h() << "\n"; // width and height of the image
-			file << "255\n"; // the maximum color value, can be at most 2^16-1 = 65535
+			file << maxVal << "\n"; // the maximum color value, can be at most 2^16-1 = 65535
 
 			// Iterate over all rows
-			for (uint32_t y = 0; y < h(); ++y)
+			for (u32 y = 0; y < h(); ++y)
 			{
 				// Save each row
-				for (uint32_t x = 0; x < w(); ++x)
+				for (u32 x = 0; x < w(); ++x)
 				{
-					vec3 col = clamp(at(x, y) * 256.0, 0.0, 255.0); // map from [0,1] to [0,255] and clamp
-					uint32_t r = (uint32_t)col.r;
-					uint32_t g = (uint32_t)col.g;
-					uint32_t b = (uint32_t)col.b;
+					vec3 col = at(x, y);
+
+					// throw away negative values
+					col = max(col, 0.0f);
+					// apply gamma
+					col = pow(col, gamma);
+					// map from [0,1] to [0,maxVal] and round
+					col = round(float(maxVal)*col);
+					// throw away values higher than maxVal
+					col = min(col, float(maxVal));
+					// convert to u32 and write to file
+					u32 r = (u32)col.r;
+					u32 g = (u32)col.g;
+					u32 b = (u32)col.b;
 					file << r << "\t" << g << "\t" << b << "\t\t";
 				}
 				file << "\t";
