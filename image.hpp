@@ -26,7 +26,6 @@ namespace HydrogenCG
 		Image() : width(0), height(0) {}
 		Image(u32 w, u32 h) { init(w, h); }
 		Image(const Image& arg) { init(arg.w(), arg.h()); copyFrom(arg); };
-		~Image() { free(); }
 
 		Image& operator=(const Image& arg)
 		{
