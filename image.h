@@ -1,5 +1,8 @@
 #pragma once
-
+/*
+	@author: Vassillen Chizhov, 2019
+	Raycaster, part 0: Ray tracing a sphere
+*/
 
 #include <cstdint>
 #include <fstream>
@@ -40,16 +43,19 @@ namespace HydrogenCG
 		u32 h() const { return height; }
 		const vec3* data() const { return e; }
 
-		vec3& at(u32 idx) { return e[idx]; }
-		const vec3& at(u32 idx) const { return e[idx]; }
+		vec3& get(u32 x, u32 y) { return e[x + y * width]; }
+		const vec3& get(u32 x, u32 y) const { return e[x + y * width]; }
 
-		vec3& operator()(u32 idx) { assert(idx < width*height"Array index out of bounds"); return at(idx); }
-		const vec3& operator()(u32 idx) const { assert(idx < width*height"Array index out of bounds"); return at(idx); }
+		vec3& at(u32 idx) { assert(idx < width*height"Array index out of bounds"); return e[idx]; }
+		const vec3& at(u32 idx) const { assert(idx < width*height"Array index out of bounds"); return e[idx]; }
 
-		vec3& at(u32 x, u32 y) { return e[x + width * y]; }
-		const vec3& at(u32 x, u32 y) const { return e[x + width * y]; }
-		vec3& operator()(u32 x, u32 y) { assert(x < width && y < height && "Array index out of bounds");  return at(x, y); }
-		const vec3& operator()(u32 x, u32 y) const { assert(x < width && y < height && "Array index out of bounds");  return at(x, y); }
+		vec3& operator()(u32 idx) { return at(idx); }
+		const vec3& operator()(u32 idx) const {  return at(idx); }
+
+		vec3& at(u32 x, u32 y) { assert(x < width && y < height && "Array index out of bounds"); return get(x,y); }
+		const vec3& at(u32 x, u32 y) const { assert(x < width && y < height && "Array index out of bounds"); return get(x,y); }
+		vec3& operator()(u32 x, u32 y) { return get(x, y); }
+		const vec3& operator()(u32 x, u32 y) const { return get(x, y); }
 
 		// http://netpbm.sourceforge.net/doc/ppm.html
 		bool savePPM(const char* filename)
