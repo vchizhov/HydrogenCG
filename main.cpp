@@ -1,17 +1,17 @@
 #include <iostream>
-#include "vec.h"
-#include "sphere.h"
-#include "camera.h"
-#include "scene.h"
-#include "integrator.h"
-#include "light.h"
+#include "vec.hpp"
+#include "sphere.hpp"
+#include "camera.hpp"
+#include "scene.hpp"
+#include "integrator.hpp"
+#include "light.hpp"
 
 
 using namespace HydrogenCG;
 int main()
 {
 	Image image;
-	image.init(640,480);
+	image.init(640, 480);
 	Camera camera;
 	Scene scene;
 	scene.surfaces.push_back(new Sphere({ 0, 0, 3 }, 1, { 1, 0.3f, 0 }));
