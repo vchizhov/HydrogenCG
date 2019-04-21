@@ -18,12 +18,12 @@ namespace HydrogenCG
 	class Image
 	{
 	private:
-		vec3* e;		//!< The position of the the aperture of the camera
+		std::unique_ptr<vec3[]> e;		//!< The position of the the aperture of the camera
 		u32 width;		//!< Number of columns
 		u32 height;		//!< Number of rows
 
 	public:
-		Image() : e(nullptr), width(0), height(0) {}
+		Image() : width(0), height(0) {}
 		Image(u32 w, u32 h) { init(w, h); }
 		Image(const Image& arg) { init(arg.w(), arg.h()); copyFrom(arg); };
 		~Image() { free(); }
@@ -37,7 +37,7 @@ namespace HydrogenCG
 		void init(u32 w, u32 h)
 		{
 			free();
-			e = new vec3[w*h];
+			e = std::make_unique<vec3[]>(w*h);
 			width = w;
 			height = h;
 		}
@@ -45,12 +45,12 @@ namespace HydrogenCG
 		void copyFrom(const Image& arg) const
 		{
 			assert(w() == arg.w() && h() == arg.h() && "Image::copy():: Image dimensions do not match.");
-			memcpy(e, arg.data(), arg.size() * sizeof(vec3));
+			memcpy(e.get(), arg.data(), arg.size() * sizeof(vec3));
 		}
 
 		void free()
 		{
-			delete[] e;
+			e.release();
 			width = 0;
 			height = 0;
 		}
@@ -58,8 +58,8 @@ namespace HydrogenCG
 		inline u32 w() const { return width; }
 		inline u32 h() const { return height; }
 		inline u32 size() const { return w() * h(); }
-		const vec3* data() const { return e; }
-		const float* dataPlain() const { return reinterpret_cast<float*>(e); }
+		const vec3* data() const { return e.get(); }
+		const float* dataPlain() const { return reinterpret_cast<float*>(e.get()); }
 
 		/*!
 			Given the x (column) and y (row) index in the 2D array, returns the corresponding index
@@ -141,9 +141,9 @@ namespace HydrogenCG
 					// throw away values higher than maxVal
 					col = min(col, float(maxVal));
 					// convert to u32 and write to file
-					u32 r = (u32)col.r;
-					u32 g = (u32)col.g;
-					u32 b = (u32)col.b;
+					u32 r = static_cast<u32>(col.r);
+					u32 g = static_cast<u32>(col.g);
+					u32 b = static_cast<u32>(col.b);
 					file << r << "\t" << g << "\t" << b << "\t\t";
 				}
 				file << "\t";

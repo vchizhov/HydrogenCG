@@ -38,17 +38,12 @@ namespace HydrogenCG
 	*/
 	struct Scene
 	{
-		std::vector<Surface*> surfaces;		//!< The collection of all surfaces in the scene
+		std::vector<std::unique_ptr<Surface>> surfaces;		//!< The collection of all surfaces in the scene
 		std::vector<LightPoint> lights;		//!< The collection of all pointlights in the scene
 
-		~Scene()
-		{
-			for (int i = 0; i < surfaces.size(); ++i) delete surfaces[i];
-		}
-
 		// convenience
-		Surface* operator[](uint32_t i) { return surfaces[i]; }
-		const Surface* operator[](uint32_t i) const { return surfaces[i]; }
+		std::unique_ptr<Surface>& operator[](uint32_t i) { return surfaces[i]; }
+		const std::unique_ptr<Surface>& operator[](uint32_t i) const { return surfaces[i]; }
 
 		/*!
 			\brief			An intersection routine with the collection
@@ -73,7 +68,7 @@ namespace HydrogenCG
 			// what this algorithm essentially does is finding the minimum of an "array"
 			// in this case the "array" is implicit and is defined by the sequence of values 
 			// produced by calling intersect on each surface
-			for (auto s : surfaces)
+			for (const auto& s : surfaces)
 			{
 				// we feed in the currently closest intersection as the upper bound,
 				// thus if the intersection in the current iteration is not closer 
@@ -86,7 +81,7 @@ namespace HydrogenCG
 				// so we use the check t<maxT as an indicator for an intersection
 				if (t < intersection.t)
 				{
-					intersection.s = s;
+					intersection.s = s.get();
 					intersection.t = t;
 				}
 			}
@@ -108,7 +103,7 @@ namespace HydrogenCG
 		*/
 		bool intersectAny(const Ray& ray, float minT = 0.0f, float maxT = std::numeric_limits<float>::max()) const
 		{
-			for (auto s : surfaces)
+			for (const auto& s : surfaces)
 			{
 				if (s->intersect(ray, minT, maxT) < maxT) return true;
 			}
