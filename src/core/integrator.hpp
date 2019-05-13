@@ -2,7 +2,7 @@
 #include "scene.hpp"
 #include "image.hpp"
 #include "camera.hpp"
-
+#include <omp.h>
 namespace HydrogenCG
 {
 	/*!
@@ -30,9 +30,10 @@ namespace HydrogenCG
 		virtual void render(Image& image, const Camera& camera, const Scene& scene) const
 		{
 			float aspectRatio = (float)image.w() / (float)image.h();
-			for (uint32_t y = 0; y < image.h(); ++y)
+#pragma omp parallel for
+			for (int y = 0; y < static_cast<int>(image.h()); ++y)
 			{
-				for (uint32_t x = 0; x < image.w(); ++x)
+				for (u32 x = 0; x < image.w(); ++x)
 				{
 					// map [0,width]x[0,height] to [-aspectRatio,aspectRatio] x [1,-1]
 					// multiply by the aspect ratio to non-uniformly stretch/squeeze the virtual film size to match the screen's aspect ratio
@@ -79,13 +80,12 @@ namespace HydrogenCG
 	public:
 		vec3 radiance(const Ray& ray, const Scene& scene) const final
 		{
-			Intersection intersection = scene(ray);
+			auto intersection = scene(ray);
 			vec3 col = vec3(0); // black background
 			if (intersection)
 			{
-				vec3 intersectionPoint = ray(intersection.t);
 				// maps normals from [-1,1]^3 to [0,1]^3 (xyz -> rgb)
-				col = 0.5f*intersection.s->normal(intersectionPoint) + vec3(0.5f);
+				col = 0.5f*intersection.n + vec3(0.5f);
 			}
 			return col;
 		}
@@ -99,11 +99,11 @@ namespace HydrogenCG
 	public:
 		vec3 radiance(const Ray& ray, const Scene& scene) const final
 		{
-			Intersection intersection = scene(ray);
+			auto intersection = scene(ray);
 			vec3 col = vec3(0); // black background
 			if (intersection)
 			{
-				col = intersection.s->col;
+				col = intersection.bsdf->eval(SurfacePoint(intersection.n, intersection.uv),-ray.d, intersection.n);
 			}
 			return col;
 		}
@@ -122,17 +122,17 @@ namespace HydrogenCG
 		{
 
 			vec3 col = vec3(0); // black background
-			Intersection intersection = scene(ray);
+			auto intersection = scene(ray);
 			if (intersection)
 			{
 				vec3 intersectionPoint = ray(intersection.t);
-				vec3 normal = intersection.s->normal(intersectionPoint);
-				vec3 intersectionColor = intersection.s->col;
+				vec3 normal = intersection.n;
 				// iterate over all lights and add their contribution
-				for (auto light : scene.lights)
+				for (auto& light : scene.lights)
 				{
 					// vector from the point being shaded to the light
-					vec3 isectL = light.o - intersectionPoint;
+					LightSample lightSample = light->sample(intersectionPoint);
+					vec3 isectL = lightSample.o - intersectionPoint;
 
 					// squared distance between the point being shaded and the light
 					// see: https://en.wikipedia.org/wiki/Inverse-square_law
@@ -146,10 +146,14 @@ namespace HydrogenCG
 
 					// Lambert's law, the max is there to disallow negative energy accumulation
 					// see: https://en.wikipedia.org/wiki/Lambert%27s_cosine_law
-					float cosTheta = max(0.0f, dot(isectL, normalPointingTowardsRay));
+					float cosTheta = dot(isectL, normalPointingTowardsRay);
 
-					// diffuse material evaluation
-					col += light.i * intersectionColor * cosTheta / rSquared;
+					if (cosTheta > 0.0f)
+					{
+						vec3 bsdfVal = intersection.bsdf->eval(SurfacePoint(intersection.n, intersection.uv), -ray.d, isectL);
+						// diffuse material evaluation
+						col += lightSample.r * bsdfVal * cosTheta / rSquared;
+					}
 				}
 			}
 			return col;
@@ -157,8 +161,8 @@ namespace HydrogenCG
 	};
 
 	/*!
-	\brief	Renders transparent colors
-*/
+		\brief	Renders transparent colors
+	*/
 	class IntegratorTransparency : public Integrator
 	{
 	public:
@@ -171,11 +175,11 @@ namespace HydrogenCG
 			// allow no more than 10 intersections
 			for (int i = 0; i < 10; ++i)
 			{
-				Intersection intersection = scene(r);
+				auto intersection = scene(r);
 				if (!intersection) break;
 				// use the color as a multiplicative filter (it absorbs the color spectrum which it is missing)
-				col *= intersection.s->col;
-				vec3 normal = intersection.s->normal(r(intersection.t)); // compute the normal to use in the offset to avoid self-intersection
+				col *= intersection.bsdf->eval(SurfacePoint(intersection.n, intersection.uv), ray.d, ray.d);
+				vec3 normal = intersection.n; // compute the normal to use in the offset to avoid self-intersection
 
 				// flip the normal to account for a ray intersecting the surface from the other side
 				float cosTheta = dot(normal, r.d);
@@ -200,17 +204,17 @@ namespace HydrogenCG
 		{
 
 			vec3 col = vec3(0); // black background
-			Intersection intersection = scene(ray);
+			auto intersection = scene(ray);
 			if (intersection)
 			{
 				vec3 intersectionPoint = ray(intersection.t);
-				vec3 normal = intersection.s->normal(intersectionPoint);
-				vec3 intersectionColor = intersection.s->col;
+				vec3 normal = intersection.n;
 				// iterate over all lights and add their contribution
-				for (auto light : scene.lights)
+				for (auto& light : scene.lights)
 				{
+					LightSample lightSample = light->sample(intersectionPoint);
 					// vector from the intersection point to the light
-					vec3 isectL = light.o - intersectionPoint;
+					vec3 isectL = lightSample.o - intersectionPoint;
 
 					// account for illumination on the other side of the surface
 					float cosThetaRay = dot(normal, ray.d);
@@ -231,14 +235,15 @@ namespace HydrogenCG
 					{
 						// avoid shadow ray self intersection by an appropriate offset along the normal in the direction of the light
 						float cosThetaL = dot(isectL, normal);
-						vec3 offsetRayOrigin = intersectionPoint + EPSILON * (cosThetaL >= 0 ? normal : -normal);
+						vec3 offsetRayOrigin = intersectionPoint + EPSILON * (cosThetaL >=0 ? normal : -normal);
 
 						// add light contribution only if there's no surface between the point being shaded and the light
 						if (!scene.intersectAny(Ray(offsetRayOrigin, isectL), 0, r - EPSILON))
 						{
+							vec3 bsdfVal = intersection.bsdf->eval(SurfacePoint(intersection.n, intersection.uv), -ray.d, isectL);
 							// diffuse material evaluation
 							// no need for max because of the if check
-							col += light.i * intersectionColor * cosTheta / rSquared;
+							col += lightSample.r * bsdfVal * cosTheta / rSquared;
 						}
 					}
 				}

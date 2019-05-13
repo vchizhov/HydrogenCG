@@ -36,7 +36,7 @@ namespace HydrogenCG
 		*/
 		inline Ray generateRay(float u, float v) const
 		{
-			return Ray(o, normalize(u * e0 + v * e1 + e2));
+			return Ray(o, normalize(u * e0 + v*e1 + e2));
 		}
 
 		// convenience/brevity
